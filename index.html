@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101827"><title>IT Class Manager</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="brand"><span class="brand-mark">IT</span><div><b>IT CLASS MANAGER</b><small>Darsni boshqarish va baholash</small></div></div><div class="top-actions"><span id="cloudStatus" class="status">Ulanish tekshirilmoqda…</span><button id="logoutBtn" class="btn ghost hidden">Chiqish</button></div></header>
+<main class="wrap">
+<section id="authView" class="auth-card card">
+  <div class="eyebrow">O‘QITUVCHI KABINETI</div><h1>Darsni tartibli boshqaring.</h1><p class="muted">Bulutda saqlash uchun Supabase hisobingiz bilan kiring.</p>
+  <label>Email<input id="email" type="email" placeholder="teacher@example.com" autocomplete="username"></label>
+  <label>Parol<input id="password" type="password" placeholder="Kamida 6 belgi" autocomplete="current-password"></label>
+  <div class="row"><button id="loginBtn" class="btn primary">Kirish</button><button id="signupBtn" class="btn secondary">Hisob yaratish</button></div>
+  <p id="authMsg" class="message"></p>
+  <div class="hint">Birinchi marta ishlatishdan oldin Supabase SQL Editor’da supabase_setup.sql faylini RUN qiling. Keyin hisob yarating.</div>
+</section>
+<section id="appView" class="hidden">
+  <div class="page-heading"><div><div class="eyebrow">O‘QITUVCHI PANELI</div><h1>Mashg‘ulot boshqaruvi</h1><p class="muted">Avval bo‘limga bir nechta o‘quvchini qo‘shing, umumiy taymerni ishga tushiring, so‘ng har birini alohida baholang.</p></div><button id="newSessionBtn" class="btn primary">＋ Yangi dars</button></div>
+  <section class="card lesson-card">
+    <div class="section-title"><div><span class="step">01</span><h2>Dars ma’lumotlari</h2></div><span id="sessionBadge" class="pill">Yangi dars</span></div>
+    <div class="form-grid"><label>Umumiy mavzu<input id="lessonTopic" placeholder="Masalan: Kompyuter va uning qurilmalari"></label><label>Guruh nomi<input id="groupName" placeholder="Masalan: Web-1 / 5-sinf"></label><label>Sana<input id="lessonDate" type="date"></label></div>
+    <div class="row wrap-row"><button id="saveSessionBtn" class="btn primary">Darsni saqlash</button><button id="resetSessionBtn" class="btn secondary">Yangi guruh / tozalash</button><span id="sessionMsg" class="message"></span></div>
+  </section>
+  <div class="station-grid">
+    <section class="station card" data-section="Doska"><div class="station-head"><div class="station-icon purple">▤</div><div><h2>Doska</h2><p>Og‘zaki tushuntirish va savol-javob</p></div></div><div class="station-count" id="countDoska">0 ta o‘quvchi</div><button class="btn station-btn" data-open="Doska">＋ Guruhga o‘quvchi qo‘shish</button><div id="listDoska" class="student-list"></div></section>
+    <section class="station card" data-section="Qog‘oz"><div class="station-head"><div class="station-icon orange">✎</div><div><h2>Qog‘oz</h2><p>Yozma va mantiqiy topshiriqlar</p></div></div><div class="station-count" id="countQog‘oz">0 ta o‘quvchi</div><button class="btn station-btn" data-open="Qog‘oz">＋ Guruhga o‘quvchi qo‘shish</button><div id="listQog‘oz" class="student-list"></div></section>
+    <section class="station card" data-section="Kompyuter"><div class="station-head"><div class="station-icon green">⌘</div><div><h2>Kompyuter</h2><p>Kompyuterda amaliy mashq</p></div></div><div class="station-count" id="countKompyuter">0 ta o‘quvchi</div><button class="btn station-btn" data-open="Kompyuter">＋ Guruhga o‘quvchi qo‘shish</button><div id="listKompyuter" class="student-list"></div></section>
+  </div>
+  <section class="card history-card"><div class="section-title"><div><span class="step">02</span><h2>Saqlangan darslar va hisobot</h2></div><button id="exportAllBtn" class="btn secondary">Excel yuklab olish (.xlsx)</button></div><div class="history-tools"><input id="historySearch" placeholder="Guruh yoki mavzu bo‘yicha qidirish"><span class="muted">Har bir dars alohida saqlanadi. Yangi dars avvalgi natijalarni o‘chirmaydi.</span></div><div id="historyList" class="history-list"></div></section>
+</section>
+</main>
+
+<div id="taskModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box modal-box-wide">
+    <button class="close" id="closeModal" aria-label="Yopish">×</button>
+    <div class="eyebrow" id="modalSection">KOMPYUTER</div>
+    <h2 id="modalTitle">Guruh mashg‘ulotini tashkil qilish</h2>
+
+    <section id="batchPanel">
+      <div class="batch-instructions"><b>1.</b> Topshiriq va vaqtni belgilang. <b>2.</b> O‘quvchilarni bittadan ro‘yxatga qo‘shing. <b>3.</b> Umumiy taymerni boshlang. <b>4.</b> Vaqt tugagach, har bir o‘quvchini alohida baholang.</div>
+      <label>Umumiy topshiriq<input id="batchTask" placeholder="Masalan: HTML da sarlavha va matn yaratish"></label>
+      <div class="timer-settings"><label>Umumiy vaqt (daqiqa)<input id="batchDuration" type="number" min="1" max="180" value="15"></label><div class="timer-display" id="timerDisplay">15:00</div></div>
+      <div class="student-adder"><label for="batchStudentName">O‘quvchi ismi</label><div class="adder-row"><input id="batchStudentName" placeholder="Ism familiya"><button id="addBatchStudent" class="btn secondary">＋ Ro‘yxatga qo‘shish</button></div></div>
+      <div class="roster-heading"><b>Guruh ro‘yxati</b><span id="rosterCount">0 nafar</span></div>
+      <div id="batchRoster" class="batch-roster"><div class="empty">Hali o‘quvchi qo‘shilmadi.</div></div>
+      <div class="row batch-actions">
+        <button id="startBatch" class="btn primary">▶ Guruh taymerini boshlash</button>
+        <button id="pauseTimer" class="btn secondary hidden">Ⅱ Pauza</button>
+        <button id="resetTimer" class="btn ghost hidden">↺ Taymerni qaytarish</button>
+        <button id="gradeNow" class="btn warning hidden">Baholashga o‘tish</button>
+      </div>
+      <p id="modalMsg" class="message"></p>
+      <section id="gradingPanel" class="grading-panel hidden">
+        <div class="grading-top"><div><div class="eyebrow">INDIVIDUAL BAHOLASH</div><h3 id="gradingStudentName">O‘quvchi</h3></div><span id="gradingProgress" class="pill">1 / 4</span></div>
+        <p id="gradingTask" class="muted"></p>
+        <div class="form-grid score-grid"><label>Bahosi<select id="gradeScore"><option value="">Bahoni tanlang</option><option value="5">5 — Mustaqil bajardi</option><option value="4">4 — Ozgina yordam bilan</option><option value="3">3 — Qisman tushundi</option><option value="2">2 — Ko‘p yordam kerak</option><option value="1">1 — Hali bajara olmadi</option></select></label><label>Izoh<input id="gradeNote" placeholder="Masalan: topshiriqni mustaqil bajardi"></label></div>
+        <button id="saveGradeNext" class="btn primary grade-next">Bahoni saqlash va keyingisi →</button>
+      </section>
+      <section id="batchDone" class="batch-done hidden"><b>✅ Ushbu guruhdagi barcha o‘quvchilar baholandi.</b><p>Natijalar darsga saqlandi. Keyingi guruhni shu bo‘limdan yangi ro‘yxat tuzib boshlashingiz mumkin.</p></section>
+    </section>
+
+    <section id="editPanel" class="hidden">
+      <label>Bo‘lim (joyini almashtirish)<select id="editSection"><option value="Doska">Doska</option><option value="Qog‘oz">Qog‘oz</option><option value="Kompyuter">Kompyuter</option></select></label>
+      <label>O‘quvchi ismi<input id="editStudentName" placeholder="Ism familiya"></label>
+      <label>Topshiriq<input id="editTask" placeholder="Bajariladigan ish"></label>
+      <div class="form-grid score-grid"><label>Vaqt (daqiqa)<input id="editDuration" type="number" min="1" max="180" value="15"></label><label>Bahosi<select id="editScore"><option value="">Baholanmagan</option><option value="5">5 — Mustaqil bajardi</option><option value="4">4 — Ozgina yordam bilan</option><option value="3">3 — Qisman tushundi</option><option value="2">2 — Ko‘p yordam kerak</option><option value="1">1 — Hali bajara olmadi</option></select></label></div>
+      <label>Izoh<input id="editNote" placeholder="O‘quvchi haqida izoh"></label>
+      <div class="row modal-actions"><button id="saveEditRecord" class="btn primary">O‘zgarishni saqlash</button><button id="deleteRecord" class="btn danger">O‘chirish</button></div>
+      <p id="editMsg" class="message"></p>
+    </section>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body></html>
